@@ -115,24 +115,17 @@ public class Lesson4 {
         //Оцениваем позиции - наши и противника. Если наше положение лучше, работаем на победу, если хуже - на ничью
         int[] retVal = {0,0};
         int myBest = 0;
-        //int[] myBestPos = new int[SIZE * 2 + DIAGQTY];
         int myBestPos = 0;
-        int posQty = 0;
-        int posToTake;
         int enemyBest = 0;
         int enemyBestPos = 0;
-        int myWorth = 0, myWorthPos = 0;
+        int myWorth = 0;
         int enemyWorth = 0;
         for(int i = 0; i < SIZE * 2 + DIAGQTY; i++){
             int j = i;
                 if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
                     if (myPaths[i] > myBest) {
                         myBest = myPaths[i];
-                        //if (myPaths[i] > myBest && posQty > 0)
-                        //    posQty--;
-                        //myBestPos[posQty] = i;
                         myBestPos = i;
-                        //posQty++;
                     }
                     if (myPaths[i] - enemyPaths[i] > enemyWorth) {
                         enemyWorth = myPaths[i] - enemyPaths[i];
@@ -144,7 +137,6 @@ public class Lesson4 {
                     }
                     if (enemyPaths[j] - myPaths[i] > myWorth) {
                         myWorth = enemyPaths[j] - myPaths[i];
-                        myWorthPos = i;
                     }
                 }
         }
