@@ -15,8 +15,6 @@ public class Lesson4 {
     public static Scanner sc = new Scanner(System.in);
     public static Random rand = new Random();
     public static void main(String[] args) {
-        //System.out.println(SIZE % 5);
-        //return;
         initMap();
         printMap();
         while (true) {
@@ -49,21 +47,20 @@ public class Lesson4 {
         int colCase = 0;
         int[] rowCaseBad = new int[SIZE];
         int colCaseBad = 0;
-        //int diag1Case = 0;
-        //int diag2Case = 0;
         for(int x = 0; x < SIZE; x++){
             for(int y = 0; y < SIZE; y++){
                 if(map[x][y] == symb) {
                     colCase++;
                     rowCase[y]++;
+                    if(colCase == DOTS_TO_WIN || rowCase[y] == DOTS_TO_WIN)
+                        return true;
+
                 }
                 else{
-                    colCaseBad++;
-                    rowCaseBad[y]++;
+                    colCase = 0;
+                    rowCase[y] = 0;
                 }
             }
-            if(colCase == DOTS_TO_WIN )
-                return true;
             colCase = 0;
         }
         for (int i = 0; i < DIAGQTY; i++){
@@ -76,15 +73,16 @@ public class Lesson4 {
                 if(pos > -1){
                     int x = coord[0];
                     int y = coord[1];
-                    if(map[x][y] == symb)
+                    if(map[x][y] == symb) {
                         dots++;
+                        if(dots >= DOTS_TO_WIN)
+                            return true;
+                    }
                     else {
-                        dotsBad++;
+                        dots = 0;
                     }
                 }
             }while (pos > -1);
-            if(dots >= DOTS_TO_WIN)
-                return true;
         }
 
         for(int i = 0; i < SIZE; i++)
@@ -122,12 +120,11 @@ public class Lesson4 {
         int posQty = 0;
         int posToTake;
         int enemyBest = 0;
+        int enemyBestPos = 0;
         int myWorth = 0, myWorthPos = 0;
         int enemyWorth = 0;
         for(int i = 0; i < SIZE * 2 + DIAGQTY; i++){
             int j = i;
-            //posQty = 0;
-           // for (int j = 0; j < SIZE; j++) {
                 if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
                     if (myPaths[i] > myBest) {
                         myBest = myPaths[i];
@@ -143,94 +140,33 @@ public class Lesson4 {
                 } else if (enemyPaths[j] > myPaths[i] && pathIsOpen(j, DOT_X)) {
                     if (enemyPaths[j] > enemyBest) {
                         enemyBest = enemyPaths[j];
+                        enemyBestPos = j;
                     }
                     if (enemyPaths[j] - myPaths[i] > myWorth) {
                         myWorth = enemyPaths[j] - myPaths[i];
                         myWorthPos = i;
                     }
                 }
-           // }
         }
-        /*
-        for(int i = SIZE; i < SIZE * 2; i++){
-            //posQty = 0;
-            for (int j = SIZE; j < SIZE * 2; j++) {
-                if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
-                    if (myPaths[i] > myBest) {
-                        myBest = myPaths[i];
-                        //if (myPaths[i] > myBest && posQty > 0)
-                        //    posQty--;
-                        //myBestPos[posQty] = i;
-                        myBestPos = i;
-                        //posQty++;
-                    }
-                    if (myPaths[i] - enemyPaths[i] > enemyWorth) {
-                        enemyWorth = myPaths[i] - enemyPaths[i];
-                    }
-                } else if (enemyPaths[j] > myPaths[i] && pathIsOpen(j, DOT_X)) {
-                    if (enemyPaths[j] > enemyBest) {
-                        enemyBest = enemyPaths[j];
-                    }
-                    if (enemyPaths[j] - myPaths[i] > myWorth) {
-                        myWorth = enemyPaths[j] - myPaths[i];
-                        myWorthPos = i;
-                    }
-                }
-            }
-        }
-        for(int i = SIZE * 2; i < SI5 ZE * 2 + DIAGQTY; i++){
-            //posQty = 0;
-            for (int j = SIZE * 2; j < SIZE * 2 + DIAGQTY; j++) {
-                if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
-                    if (myPaths[i] > myBest) {
-                        myBest = myPaths[i];
-                        //if (myPaths[i] > myBest && posQty > 0)
-                        //    posQty--;
-                        //myBestPos[posQty] = i;
-                        myBestPos = i;
-                        //posQty++;
-                    }
-                    if (myPaths[i] - enemyPaths[i] > enemyWorth) {
-                        enemyWorth = myPaths[i] - enemyPaths[i];
-                    }
-                } else if (enemyPaths[j] > myPaths[i] && pathIsOpen(j, DOT_X)) {
-                    if (enemyPaths[j] > enemyBest) {
-                        enemyBest = enemyPaths[j];
-                    }
-                    if (enemyPaths[j] - myPaths[i] > myWorth) {
-                        myWorth = enemyPaths[j] - myPaths[i];
-                        myWorthPos = i;
-                    }
-                }
-            }
-        }
-
-         */
         //Сравниваем лучшие позиции
         if(DOTS_TO_WIN - myBest == 1)
             retVal = getFirstFreeCell(myBestPos,DOT_X);
         else if(DOTS_TO_WIN - enemyBest == 1)
-            retVal = getFirstFreeCell(myWorthPos,DOT_X);
+            retVal = getFirstFreeCell(enemyBestPos,DOT_X);
         else {
-            //posToTake = rand.nextInt(posQty);
-            retVal = getFirstFreeCell(myBestPos,DOT_X);
+            if(myBest > 0)
+                retVal = getFirstFreeCell(myBestPos,DOT_X);
+            else {
+                do{
+                    retVal = getFirstFreeCell(rand.nextInt(SIZE * 2 + DIAGQTY),DOT_X);
+                } while (!isCellValid(retVal[0], retVal[1]));
+            }
         }
         return retVal;
-        /*else if(myBest >= enemyBest) {//По возможности разнообразим ответы на однотипные ходы игрока
-        else if(enemyWorth > 0 && myWorth +1 > enemyWorth)
-            retVal = getFirstFreeCell(myWorthPos,DOT_O);
-            posToTake = rand.nextInt(posQty);
-            retVal = getFirstFreeCell(myBestPos[posToTake], DOT_O);
-        }
-        else
-            retVal = getFirstFreeCell(enemyBestPos,DOT_O);
-
-         */
     }
 
     public static int[] getFirstFreeCell(int pathNo, char symb){
         int[] retVal = {0,0};
-        //boolean isGood = false;
         int lastGoodI = -1, lastBadI = -1;
         int lastGoodX = -1, lastBadX = -1;
         int lastGoodY = -1, lastBadY = -1;
@@ -248,7 +184,7 @@ public class Lesson4 {
                 else {
                     lastBadI = i;
                     if(lastGoodI > -1){
-                        retVal[0] = i;
+                        retVal[0] = lastGoodI;
                         retVal[1] = pathNo;
                         break;
                     }
@@ -368,12 +304,6 @@ public class Lesson4 {
                     enemyRow[y]++;
                     enemyCol[x]++;
                 }
-                /*else { //Пустой символ, пишем в плюс и себе, и противнику
-                    myRow[y]++;
-                    myCol[x]++;
-                    enemyRow[y]++;
-                    enemyCol[x]++;
-                }*/
             }
         }
         for (int i = 0; i < DIAGQTY; i++) {
@@ -388,10 +318,6 @@ public class Lesson4 {
                         myDiags[i]++;
                     else if(map[y][x] == enemySymb)
                         enemyDiags[i]++;
-                    /*else{
-                        myDiags[i]++;
-                        enemyDiags[i]++;
-                    }*/
                 }
             } while (pos > -1);
         }
@@ -472,7 +398,7 @@ public class Lesson4 {
             System.out.println("Введите координаты в формате X Y");
             x = sc.nextInt() - 1;
             y = sc.nextInt() - 1;
-        } while (!isCellValid(x, y)); // while(isCellValid(x, y) == false)
+        } while (!isCellValid(x, y));
         map[y][x] = DOT_X;
     }
     public static boolean isCellValid(int x, int y) {
