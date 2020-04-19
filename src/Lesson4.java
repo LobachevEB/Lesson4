@@ -47,26 +47,51 @@ public class Lesson4 {
     public static boolean checkWin(char symb) {
         int[] rowCase = new int[SIZE];
         int colCase = 0;
-        int diag1Case = 0;
-        int diag2Case = 0;
+        int[] rowCaseBad = new int[SIZE];
+        int colCaseBad = 0;
+        //int diag1Case = 0;
+        //int diag2Case = 0;
         for(int x = 0; x < SIZE; x++){
             for(int y = 0; y < SIZE; y++){
                 if(map[x][y] == symb) {
                     colCase++;
                     rowCase[y]++;
                 }
-                if(x == y && map[x][y] == symb)
-                    diag1Case++;
-                if(x + y == SIZE - 1 && map[x][y] == symb)
-                    diag2Case++;
+                else{
+                    colCaseBad++;
+                    rowCaseBad[y]++;
+                }
             }
-            if(colCase == DOTS_TO_WIN || diag1Case == DOTS_TO_WIN || diag2Case == DOTS_TO_WIN)
+            if(colCase == DOTS_TO_WIN )
                 return true;
             colCase = 0;
         }
+        for (int i = 0; i < DIAGQTY; i++){
+            int[] coord = {0,0};
+            int pos = 0;
+            int dots = 0;
+            int dotsBad = 0;
+            do {
+                pos = runDiagonal(i,pos,coord);
+                if(pos > -1){
+                    int x = coord[0];
+                    int y = coord[1];
+                    if(map[x][y] == symb)
+                        dots++;
+                    else {
+                        dotsBad++;
+                    }
+                }
+            }while (pos > -1);
+            if(dots >= DOTS_TO_WIN)
+                return true;
+        }
+
         for(int i = 0; i < SIZE; i++)
             if(rowCase[i] == DOTS_TO_WIN)
                 return true;
+
+
         return false;
     }
     public static boolean isMapFull() {
@@ -79,8 +104,8 @@ public class Lesson4 {
     }
 
     public static void aiTurn() {
-        int[] myPaths = new int[SIZE * 2 + 2];
-        int[] enemyPaths = new int[SIZE * 2 + 2];
+        int[] myPaths = new int[SIZE * 2 + DIAGQTY];
+        int[] enemyPaths = new int[SIZE * 2 + DIAGQTY];
         int[] xy = {0,0};
         findAccessiblePaths(myPaths,DOT_O,enemyPaths,DOT_X); //Оцениваем позиции
         xy = findBestVariant(myPaths,enemyPaths); //Выбираем лучший вариант
@@ -92,90 +117,194 @@ public class Lesson4 {
         //Оцениваем позиции - наши и противника. Если наше положение лучше, работаем на победу, если хуже - на ничью
         int[] retVal = {0,0};
         int myBest = 0;
-        int[] myBestPos = new int[SIZE * 2 + 2];
+        //int[] myBestPos = new int[SIZE * 2 + DIAGQTY];
+        int myBestPos = 0;
         int posQty = 0;
         int posToTake;
-        int enemyBest = 0, enemyBestPos = -1;
+        int enemyBest = 0;
         int myWorth = 0, myWorthPos = 0;
-        int enemyWorth = 0, enemyWorthPos = -1;
-        for(int i = 0; i < SIZE * 2 + 2; i++){
-            if(myPaths[i] >= enemyPaths[i] && pathIsOpen(i,DOT_O)) {
-                if (myPaths[i] >= myBest) {
-                    myBest = myPaths[i];
-                    if(myPaths[i] > myBest && posQty > 0)
-                        posQty--;
-                    myBestPos[posQty] = i;
-                    posQty++;
+        int enemyWorth = 0;
+        for(int i = 0; i < SIZE * 2 + DIAGQTY; i++){
+            int j = i;
+            //posQty = 0;
+           // for (int j = 0; j < SIZE; j++) {
+                if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
+                    if (myPaths[i] > myBest) {
+                        myBest = myPaths[i];
+                        //if (myPaths[i] > myBest && posQty > 0)
+                        //    posQty--;
+                        //myBestPos[posQty] = i;
+                        myBestPos = i;
+                        //posQty++;
+                    }
+                    if (myPaths[i] - enemyPaths[i] > enemyWorth) {
+                        enemyWorth = myPaths[i] - enemyPaths[i];
+                    }
+                } else if (enemyPaths[j] > myPaths[i] && pathIsOpen(j, DOT_X)) {
+                    if (enemyPaths[j] > enemyBest) {
+                        enemyBest = enemyPaths[j];
+                    }
+                    if (enemyPaths[j] - myPaths[i] > myWorth) {
+                        myWorth = enemyPaths[j] - myPaths[i];
+                        myWorthPos = i;
+                    }
                 }
-                if(myPaths[i] - enemyPaths[i] > enemyWorth){
-                    enemyWorth = myPaths[i] - enemyPaths[i];
-                    enemyWorthPos = i;
-                }
-            }
-            else if(enemyPaths[i] > myPaths[i]  && pathIsOpen(i,DOT_X)){
-                if (enemyPaths[i] > enemyBest) {
-                    enemyBest = enemyPaths[i];
-                    enemyBestPos = i;
-                }
-                if(enemyPaths[i] - myPaths[i] > myWorth){
-                    myWorth = enemyPaths[i] - myPaths[i];
-                    myWorthPos = i;
+           // }
+        }
+        /*
+        for(int i = SIZE; i < SIZE * 2; i++){
+            //posQty = 0;
+            for (int j = SIZE; j < SIZE * 2; j++) {
+                if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
+                    if (myPaths[i] > myBest) {
+                        myBest = myPaths[i];
+                        //if (myPaths[i] > myBest && posQty > 0)
+                        //    posQty--;
+                        //myBestPos[posQty] = i;
+                        myBestPos = i;
+                        //posQty++;
+                    }
+                    if (myPaths[i] - enemyPaths[i] > enemyWorth) {
+                        enemyWorth = myPaths[i] - enemyPaths[i];
+                    }
+                } else if (enemyPaths[j] > myPaths[i] && pathIsOpen(j, DOT_X)) {
+                    if (enemyPaths[j] > enemyBest) {
+                        enemyBest = enemyPaths[j];
+                    }
+                    if (enemyPaths[j] - myPaths[i] > myWorth) {
+                        myWorth = enemyPaths[j] - myPaths[i];
+                        myWorthPos = i;
+                    }
                 }
             }
         }
+        for(int i = SIZE * 2; i < SI5 ZE * 2 + DIAGQTY; i++){
+            //posQty = 0;
+            for (int j = SIZE * 2; j < SIZE * 2 + DIAGQTY; j++) {
+                if (myPaths[i] >= enemyPaths[j] && pathIsOpen(i, DOT_O)) {
+                    if (myPaths[i] > myBest) {
+                        myBest = myPaths[i];
+                        //if (myPaths[i] > myBest && posQty > 0)
+                        //    posQty--;
+                        //myBestPos[posQty] = i;
+                        myBestPos = i;
+                        //posQty++;
+                    }
+                    if (myPaths[i] - enemyPaths[i] > enemyWorth) {
+                        enemyWorth = myPaths[i] - enemyPaths[i];
+                    }
+                } else if (enemyPaths[j] > myPaths[i] && pathIsOpen(j, DOT_X)) {
+                    if (enemyPaths[j] > enemyBest) {
+                        enemyBest = enemyPaths[j];
+                    }
+                    if (enemyPaths[j] - myPaths[i] > myWorth) {
+                        myWorth = enemyPaths[j] - myPaths[i];
+                        myWorthPos = i;
+                    }
+                }
+            }
+        }
+
+         */
         //Сравниваем лучшие позиции
-        if(enemyWorth > 0 && myWorth +1 > enemyWorth)
+        if(DOTS_TO_WIN - myBest == 1)
+            retVal = getFirstFreeCell(myBestPos,DOT_X);
+        else if(DOTS_TO_WIN - enemyBest == 1)
+            retVal = getFirstFreeCell(myWorthPos,DOT_X);
+        else {
+            //posToTake = rand.nextInt(posQty);
+            retVal = getFirstFreeCell(myBestPos,DOT_X);
+        }
+        return retVal;
+        /*else if(myBest >= enemyBest) {//По возможности разнообразим ответы на однотипные ходы игрока
+        else if(enemyWorth > 0 && myWorth +1 > enemyWorth)
             retVal = getFirstFreeCell(myWorthPos,DOT_O);
-        else if(myBest >= enemyBest) {//По возможности разнообразим ответы на однотипные ходы игрока
             posToTake = rand.nextInt(posQty);
             retVal = getFirstFreeCell(myBestPos[posToTake], DOT_O);
         }
         else
             retVal = getFirstFreeCell(enemyBestPos,DOT_O);
-        return retVal;
+
+         */
     }
 
     public static int[] getFirstFreeCell(int pathNo, char symb){
         int[] retVal = {0,0};
+        //boolean isGood = false;
+        int lastGoodI = -1, lastBadI = -1;
+        int lastGoodX = -1, lastBadX = -1;
+        int lastGoodY = -1, lastBadY = -1;
         if (pathNo < SIZE){ //Ищем в строке pathNo
+            retVal[1] = pathNo;
             for (int i = 0; i < SIZE; i++){
                 if(map[pathNo][i] == DOT_EMPTY){
-                    retVal[0] = i;
-                    retVal[1] = pathNo;
-                    break;
+                    if(lastBadI > -1) {
+                        retVal[0] = i;
+                        retVal[1] = pathNo;
+                        break;
+                    }
+                    lastGoodI = i;
+                }
+                else {
+                    lastBadI = i;
+                    if(lastGoodI > -1){
+                        retVal[0] = i;
+                        retVal[1] = pathNo;
+                        break;
+                    }
                 }
             }
         }
         else if(pathNo < SIZE * 2) { //Ищем в столбце pathNo
+            retVal[0] = pathNo - SIZE;
             for (int i = 0; i < SIZE; i++) {
                 if (map[i][pathNo - SIZE] == DOT_EMPTY){
-                    retVal[0] = pathNo - SIZE;
-                    retVal[1] = i;
-                    break;
+                    if(lastBadI > -1) {
+                        retVal[0] = pathNo - SIZE;
+                        retVal[1] = i;
+                        break;
+                    }
+                    lastGoodI = i;
+                }
+                else {
+                    lastBadI = i;
+                    if(lastGoodI > -1){
+                        retVal[0] = pathNo - SIZE;
+                        retVal[1] = lastGoodI;
+                        break;
+                    }
                 }
             }
         }
-        else if(pathNo == SIZE * 2){ //Ищем в прямой диагонали
-            for (int i = 0; i < SIZE; i++) {
-                if (map[i][i] == DOT_EMPTY){
-                    retVal[0] = i;
-                    retVal[1] = i;
-                    break;
+        else{
+            int[] coord = {0, 0};
+            int pos = 0;
+            int i = pathNo - SIZE * 2;
+            do {
+                pos = runDiagonal(i,pos,coord);
+                if(pos > -1){
+                    int x = coord[0];
+                    int y = coord[1];
+                    if(map[x][y] == DOT_EMPTY){
+                        if(lastBadX > -1 && lastBadY > -1) {
+                            retVal[0] = y;
+                            retVal[1] = x;
+                            return retVal;
+                        }
+                        lastGoodX = x;
+                        lastGoodY = y;
+                    }
+                    else {
+                        lastBadX = x;
+                        lastBadY = y;
+                        if(lastGoodX > -1 && lastGoodY > -1){
+                            retVal[0] = lastGoodY;
+                            retVal[1] = lastGoodX;
+                            return retVal;
+                        }
+                    }
                 }
-            }
-
-        }
-        else { //Ищем в обратной диагонали
-            int j = 0;
-            for (int i = SIZE - 1; i >= 0; i--) {
-                if (map[i][j] == DOT_EMPTY){
-                    retVal[0] = j;
-                    retVal[1] = i;
-                    break;
-                }
-                j++;
-            }
-
+            } while (pos > -1);
         }
         return retVal;
     }
@@ -199,24 +328,21 @@ public class Lesson4 {
                     break;
             }
         }
-        else if(pathNo == SIZE * 2){ //Ищем в прямой диагонали
-            for (int i = 0; i < SIZE; i++) {
-                if (map[i][i] == symb || map[i][i] == DOT_EMPTY)
-                    metric++;
-                else if (metric > 0)
-                    break;
-            }
-
-        }
-        else { //Ищем в обратной диагонали
-            int j = 0;
-            for (int i = SIZE - 1; i >= 0; i--) {
-                if (map[i][j] == symb || map[i][j] == DOT_EMPTY)
-                    metric++;
-                else if (metric > 0)
-                    break;
-                j++;
-            }
+        else {
+            int[] coord = {0, 0};
+            int pos = 0;
+            int i = pathNo - SIZE * 2;
+            do {
+                pos = runDiagonal(i,pos,coord);
+                if(pos > -1){
+                    int x = coord[0];
+                    int y = coord[1];
+                    if (map[y][x] == symb || map[y][x] == DOT_EMPTY)
+                        metric++;
+                    else if (metric > 0)
+                        return metric >= DOTS_TO_WIN;
+                }
+            } while (pos > -1);
 
         }
         return metric >= DOTS_TO_WIN;
@@ -225,17 +351,13 @@ public class Lesson4 {
     public static void findAccessiblePaths(int[] myPaths, char mySymb, int[] enemyPaths, char enemySymb){
         //Ищем сколько в каждой строке, столбце, диагонали заполнено элементов нами и противником
         int[] myRow,myCol;
-        int myDiag1,myDiag2;
+        int[] myDiags = new int[DIAGQTY];
         int[] enemyRow,enemyCol;
-        int enemyDiag1,enemyDiag2;
+        int[] enemyDiags = new int[DIAGQTY];
         myRow = new int[SIZE];
         myCol = new int[SIZE];
         enemyRow = new int[SIZE];
         enemyCol = new int[SIZE];
-        myDiag1 = 0;
-        myDiag2 = 0;
-        enemyDiag1 = 0;
-        enemyDiag2 = 0;
         for (int x = 0; x < SIZE; x++){
             for (int y = 0; y < SIZE; y++){
                 if(map[x][y] == mySymb) {
@@ -246,36 +368,35 @@ public class Lesson4 {
                     enemyRow[y]++;
                     enemyCol[x]++;
                 }
-                else { //Пустой символ, пишем в плюс и себе, и противнику
+                /*else { //Пустой символ, пишем в плюс и себе, и противнику
                     myRow[y]++;
                     myCol[x]++;
                     enemyRow[y]++;
                     enemyCol[x]++;
-                }
-                if(x == y ){
-                    if(map[y][x] == mySymb)
-                        myDiag1++;
-                    else if(map[y][x] == enemySymb)
-                        enemyDiag1++;
-                    else {
-                        myDiag1++;
-                        enemyDiag1++;
-                    }
-                }
-                if(x + y == SIZE - 1){
-                    if(map[y][x] == mySymb)
-                        myDiag2++;
-                    else if(map[y][x] == enemySymb)
-                        enemyDiag2++;
-                    else {
-                        myDiag2++;
-                        enemyDiag2++;
-                    }
-                }
-
+                }*/
             }
         }
-        int len = SIZE * 2 + 2;
+        for (int i = 0; i < DIAGQTY; i++) {
+            int[] coord = {0, 0};
+            int pos = 0;
+            do {
+                pos = runDiagonal(i, pos, coord);
+                if(pos > -1){
+                    int x = coord[0];
+                    int y = coord[1];
+                    if(map[y][x] == mySymb)
+                        myDiags[i]++;
+                    else if(map[y][x] == enemySymb)
+                        enemyDiags[i]++;
+                    /*else{
+                        myDiags[i]++;
+                        enemyDiags[i]++;
+                    }*/
+                }
+            } while (pos > -1);
+        }
+
+        int len = SIZE * 2;
         for(int i = 0; i < len; i++){
             if(i < SIZE){
                 myPaths[i] = myCol[i ];
@@ -286,17 +407,63 @@ public class Lesson4 {
                 enemyPaths[i] = enemyRow[i- SIZE];
 
             }
-            else {
-                if(i == SIZE * 2){
-                    myPaths[i] = myDiag1;
-                    enemyPaths[i] = enemyDiag1;
+        }
+        for (int i = 0; i < DIAGQTY; i++){
+            myPaths[len + i] = myDiags[i];
+            enemyPaths[len + i] = enemyDiags[i];
+        }
+    }
+
+    public static int runDiagonal(int diagNo,int pos, int[] coord){
+        int x = 0, y = 0;
+        int n = 0;
+
+        if(diagNo < DIAGQTY/2){
+            for(int i = 0; i <= diagNo; i++){
+                if(i % 2 != 0) {
+                    x = 0;
+                    y = n;
+                    n++;
                 }
                 else {
-                    myPaths[i] = myDiag2;
-                    enemyPaths[i] = enemyDiag2;
+                    x = i/2;
+                    y = 0;
+                    n++;
                 }
             }
         }
+        else {
+            x = SIZE - 1;
+            y = 0;
+            for (int i = DIAGQTY/2; i < diagNo; i++){
+                if(i % 2 == 0){
+                    n++;
+                    x = LASTIND - n;
+                    y = 0;
+                }
+                else{
+                    x = LASTIND;
+                    y =  n;
+                }
+            }
+        }
+        for (int i = 0; i < pos; i++){
+            if(diagNo < DIAGQTY/2) {
+                x++;
+                y++;
+            }
+            else{
+                x--;
+                y++;
+            }
+
+        }
+        if(x > LASTIND || y > LASTIND || x < 0 || y < 0)
+            return -1;
+        coord[0] = x;
+        coord[1] = y;
+        return ++pos;
+
     }
 
     public static void humanTurn() {
