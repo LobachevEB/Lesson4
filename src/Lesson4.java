@@ -1,9 +1,13 @@
+import java.lang.reflect.Array;
 import java.util.Random;
 import java.util.Scanner;
 
 public class Lesson4 {
-    public static int SIZE = 3;
-    public static int DOTS_TO_WIN = 3;
+    public static int SIZE = 5;
+    public static int DOTS_TO_WIN = 4;
+    public static int LASTIND = SIZE - 1;
+    //Общее к-во диагоналей, в которые поместится последовательность из DOTS_TO_WIN клеток
+    public static int DIAGQTY = (SIZE - DOTS_TO_WIN) * LASTIND + 2;
     public static final char DOT_EMPTY = '•';
     public static final char DOT_X = 'X';
     public static final char DOT_O = 'O';
@@ -29,7 +33,7 @@ public class Lesson4 {
             aiTurn();
             printMap();
             if (checkWin(DOT_O)) {
-                System.out.println("Победил Искуственный Интеллект");
+                System.out.println("Победил Искуственный Интеллект. Убить всех человеков!");
                 break;
             }
             if (isMapFull()) {
@@ -41,22 +45,28 @@ public class Lesson4 {
 
     }
     public static boolean checkWin(char symb) {
-        int rowCase = 0;
+        int[] rowCase = new int[SIZE];
+        int colCase = 0;
         int diag1Case = 0;
         int diag2Case = 0;
         for(int x = 0; x < SIZE; x++){
             for(int y = 0; y < SIZE; y++){
-                if(map[x][y] == symb)
-                    rowCase++;
+                if(map[x][y] == symb) {
+                    colCase++;
+                    rowCase[y]++;
+                }
                 if(x == y && map[x][y] == symb)
                     diag1Case++;
                 if(x + y == SIZE - 1 && map[x][y] == symb)
                     diag2Case++;
             }
-            if(rowCase == SIZE || diag1Case == SIZE || diag2Case == SIZE)
+            if(colCase == DOTS_TO_WIN || diag1Case == DOTS_TO_WIN || diag2Case == DOTS_TO_WIN)
                 return true;
-            rowCase = 0;
+            colCase = 0;
         }
+        for(int i = 0; i < SIZE; i++)
+            if(rowCase[i] == DOTS_TO_WIN)
+                return true;
         return false;
     }
     public static boolean isMapFull() {
@@ -67,53 +77,61 @@ public class Lesson4 {
         }
         return true;
     }
+
     public static void aiTurn() {
         int[] myPaths = new int[SIZE * 2 + 2];
         int[] enemyPaths = new int[SIZE * 2 + 2];
         int[] xy = {0,0};
-        findAccessiblePaths(myPaths,DOT_O,enemyPaths,DOT_X);
-        xy = findBestVariant(myPaths,enemyPaths);
+        findAccessiblePaths(myPaths,DOT_O,enemyPaths,DOT_X); //Оцениваем позиции
+        xy = findBestVariant(myPaths,enemyPaths); //Выбираем лучший вариант
         System.out.println("Компьютер походил в точку " + (xy[0] + 1) + " " + (xy[1] + 1));
         map[xy[1]][xy[0]] = DOT_O;
-
-        /*
-        int x, y;
-        do {
-            x = rand.nextInt(SIZE);
-            y = rand.nextInt(SIZE);
-        } while (!isCellValid(x, y));
-        System.out.println("Компьютер походил в точку " + (x + 1) + " " + (y + 1));
-        map[y][x] = DOT_O;*/
     }
+
     public static int[] findBestVariant(int[] myPaths, int[] enemyPaths){
         //Оцениваем позиции - наши и противника. Если наше положение лучше, работаем на победу, если хуже - на ничью
         int[] retVal = {0,0};
-        int myBest = 0, myBestPos = -1;
+        int myBest = 0;
+        int[] myBestPos = new int[SIZE * 2 + 2];
+        int posQty = 0;
+        int posToTake;
         int enemyBest = 0, enemyBestPos = -1;
+        int myWorth = 0, myWorthPos = 0;
+        int enemyWorth = 0, enemyWorthPos = -1;
         for(int i = 0; i < SIZE * 2 + 2; i++){
-            if(myPaths[i] - enemyPaths[i] >= DOTS_TO_WIN && pathIsOpen(i,DOT_O)) {
-                if (myPaths[i] > myBest) {
+            if(myPaths[i] >= enemyPaths[i] && pathIsOpen(i,DOT_O)) {
+                if (myPaths[i] >= myBest) {
                     myBest = myPaths[i];
-                    myBestPos = i;
+                    if(myPaths[i] > myBest && posQty > 0)
+                        posQty--;
+                    myBestPos[posQty] = i;
+                    posQty++;
+                }
+                if(myPaths[i] - enemyPaths[i] > enemyWorth){
+                    enemyWorth = myPaths[i] - enemyPaths[i];
+                    enemyWorthPos = i;
                 }
             }
-            else if(enemyPaths[i] - myPaths[i] >= DOTS_TO_WIN && pathIsOpen(i,DOT_O)){
+            else if(enemyPaths[i] > myPaths[i]  && pathIsOpen(i,DOT_X)){
                 if (enemyPaths[i] > enemyBest) {
                     enemyBest = enemyPaths[i];
                     enemyBestPos = i;
                 }
+                if(enemyPaths[i] - myPaths[i] > myWorth){
+                    myWorth = enemyPaths[i] - myPaths[i];
+                    myWorthPos = i;
+                }
             }
         }
         //Сравниваем лучшие позиции
-        if(myBest == 0 && myBest == enemyBest){
-            retVal[0] = rand.nextInt(SIZE);
-            retVal[1] = rand.nextInt(SIZE);
-            return retVal;
+        if(enemyWorth > 0 && myWorth +1 > enemyWorth)
+            retVal = getFirstFreeCell(myWorthPos,DOT_O);
+        else if(myBest >= enemyBest) {//По возможности разнообразим ответы на однотипные ходы игрока
+            posToTake = rand.nextInt(posQty);
+            retVal = getFirstFreeCell(myBestPos[posToTake], DOT_O);
         }
-        else if(myBest >= enemyBest)
-            retVal = getFirstFreeCell(myBest,DOT_O);
         else
-            retVal = getFirstFreeCell(enemyBest,DOT_O);
+            retVal = getFirstFreeCell(enemyBestPos,DOT_O);
         return retVal;
     }
 
@@ -122,17 +140,17 @@ public class Lesson4 {
         if (pathNo < SIZE){ //Ищем в строке pathNo
             for (int i = 0; i < SIZE; i++){
                 if(map[pathNo][i] == DOT_EMPTY){
-                    retVal[0] = pathNo;
-                    retVal[1] = i;
+                    retVal[0] = i;
+                    retVal[1] = pathNo;
                     break;
                 }
             }
         }
         else if(pathNo < SIZE * 2) { //Ищем в столбце pathNo
             for (int i = 0; i < SIZE; i++) {
-                if (map[i][pathNo] == DOT_EMPTY){
-                    retVal[0] = i;
-                    retVal[1] = pathNo;
+                if (map[i][pathNo - SIZE] == DOT_EMPTY){
+                    retVal[0] = pathNo - SIZE;
+                    retVal[1] = i;
                     break;
                 }
             }
@@ -151,8 +169,8 @@ public class Lesson4 {
             int j = 0;
             for (int i = SIZE - 1; i >= 0; i--) {
                 if (map[i][j] == DOT_EMPTY){
-                    retVal[0] = i;
-                    retVal[1] = j;
+                    retVal[0] = j;
+                    retVal[1] = i;
                     break;
                 }
                 j++;
@@ -175,7 +193,7 @@ public class Lesson4 {
         }
         else if(pathNo < SIZE * 2) { //Ищем в столбце pathNo
             for (int i = 0; i < SIZE; i++) {
-                if (map[i][pathNo] == symb || map[i][pathNo] == DOT_EMPTY)
+                if (map[i][pathNo - SIZE] == symb || map[i][pathNo - SIZE] == DOT_EMPTY)
                     metric++;
                 else if (metric > 0)
                     break;
@@ -221,23 +239,23 @@ public class Lesson4 {
         for (int x = 0; x < SIZE; x++){
             for (int y = 0; y < SIZE; y++){
                 if(map[x][y] == mySymb) {
-                    myRow[x]++;
-                    myCol[y]++;
+                    myRow[y]++;
+                    myCol[x]++;
                 }
                 else if(map[x][y] == enemySymb){
-                    enemyRow[x]++;
-                    enemyCol[y]++;
+                    enemyRow[y]++;
+                    enemyCol[x]++;
                 }
                 else { //Пустой символ, пишем в плюс и себе, и противнику
-                    myRow[x]++;
-                    myCol[y]++;
-                    enemyRow[x]++;
-                    enemyCol[y]++;
+                    myRow[y]++;
+                    myCol[x]++;
+                    enemyRow[y]++;
+                    enemyCol[x]++;
                 }
                 if(x == y ){
-                    if(map[x][y] == mySymb)
+                    if(map[y][x] == mySymb)
                         myDiag1++;
-                    else if(map[x][y] == enemySymb)
+                    else if(map[y][x] == enemySymb)
                         enemyDiag1++;
                     else {
                         myDiag1++;
@@ -245,9 +263,9 @@ public class Lesson4 {
                     }
                 }
                 if(x + y == SIZE - 1){
-                    if(map[x][y] == mySymb)
+                    if(map[y][x] == mySymb)
                         myDiag2++;
-                    else if(map[x][y] == enemySymb)
+                    else if(map[y][x] == enemySymb)
                         enemyDiag2++;
                     else {
                         myDiag2++;
@@ -260,12 +278,12 @@ public class Lesson4 {
         int len = SIZE * 2 + 2;
         for(int i = 0; i < len; i++){
             if(i < SIZE){
-                myPaths[i] = myRow[i];
-                enemyPaths[i] = enemyRow[i];
+                myPaths[i] = myCol[i ];
+                enemyPaths[i] = enemyCol[i ];
             }
             else if(i >= SIZE && i < SIZE * 2){
-                myPaths[i] = myCol[i - SIZE];
-                enemyPaths[i] = enemyCol[i - SIZE];
+                myPaths[i] = myRow[i- SIZE];
+                enemyPaths[i] = enemyRow[i- SIZE];
 
             }
             else {
@@ -311,7 +329,7 @@ public class Lesson4 {
         for (int i = 0; i < SIZE; i++) {
             System.out.print((i + 1) + " ");
             for (int j = 0; j < SIZE; j++) {
-                System.out.print(map[i][j] + " ");
+                System.out.print(map[j][i] + " ");
             }
             System.out.println();
         }
